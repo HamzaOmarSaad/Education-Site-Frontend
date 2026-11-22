@@ -1,27 +1,34 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { userContext, type UserDataType } from "./contextCreation";
-import axios, { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
+import { api } from "../../api/client";
 
 function UserContextProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserDataType | null>(null);
 
-  async function getUserData(token: string) {
+  const getUserData = useCallback(async (token: string) => {
     try {
-      const { data } = await axios(`http://localhost:3000/user/profile`, {
+      const { data } = await api(`/user/profile`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setUserData(data.data);
+
+      const profile = data?.data ?? data;
+      setUserData(profile ?? null);
     } catch (error) {
       if (isAxiosError(error)) {
         console.log("🚀 ~ getUserData ~ error:", error.cause);
       }
+      setUserData(null);
     }
-  }
+  }, []);
 
-  const value = { userData, getUserData };
+  const value = useMemo(
+    () => ({ userData, getUserData }),
+    [getUserData, userData],
+  );
 
   return <userContext.Provider value={value}>{children}</userContext.Provider>;
 }

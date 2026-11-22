@@ -8,10 +8,12 @@ import {
   TrackYear,
 } from "../../../utils/enums/user.enums";
 import { Link, useNavigate } from "react-router";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { verifyContext } from "../../../context/verify Context/contextCreation";
 import { useContext } from "react";
+import { getApiErrorInfo, handleApiError } from "../../../utils/common/errorHandler";
+import { api } from "../../../api/client";
+import { useLanguage } from "../../../context/language/LanguageContext";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -39,11 +41,13 @@ const defaultValues = {
 };
 export function Signup() {
   const { setUserEmail } = useContext(verifyContext);
+  const { t } = useLanguage();
 
   const {
     register,
     handleSubmit,
     control,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signupSchema),
@@ -58,21 +62,23 @@ export function Signup() {
     try {
       console.log(data);
 
-      const response = await axios("http://localhost:3000/auth/signup", {
+      const response = await api("/auth/signup", {
         method: "POST",
         data,
       });
       console.log("🚀 ~ onSubmit ~ response:", response);
 
-      if (response.data?.token) {
-        localStorage.setItem("token", response.data.token);
-      }
-
       setUserEmail(data.email);
-      toast.success("Login successful");
+      toast.success("Account created. Check your email for the code.");
       router("/confirm-email");
     } catch (error) {
-      console.log("🚀 ~ onSubmit ~ error:", error);
+      const info = getApiErrorInfo(error);
+      for (const issue of info.fieldErrors) {
+        if (issue.field in defaultValues) {
+          setError(issue.field as keyof SignUpFormData, { type: "server", message: issue.message });
+        }
+      }
+      handleApiError(error);
     }
   }
   return (
@@ -82,12 +88,12 @@ export function Signup() {
         <section className="flex flex-col justify-center lg:sticky lg:top-10 lg:min-h-150">
           <div className="max-w-xl">
             <div className="mb-6 inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600">
-              🎓 Start Your Learning Journey
+              {t("Start Your Learning Journey")}
             </div>
 
             <h1 className="text-4xl font-bold leading-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Learn smarter.
-              <span className="block text-blue-600">Achieve more.</span>
+              {t("Learn smarter.")}
+              <span className="block text-blue-600">{t("Achieve more.")}</span>
             </h1>
 
             <p className="mt-6 max-w-lg text-base leading-7 text-gray-600 sm:text-lg">
@@ -98,17 +104,17 @@ export function Signup() {
             <div className="mt-10 grid grid-cols-3 gap-4">
               <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p className="text-2xl font-bold text-gray-900">100+</p>
-                <p className="mt-1 text-sm text-gray-500">Teachers</p>
+                <p className="mt-1 text-sm text-gray-500">{t("Teachers")}</p>
               </div>
 
               <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p className="text-2xl font-bold text-gray-900">10K+</p>
-                <p className="mt-1 text-sm text-gray-500">Students</p>
+                <p className="mt-1 text-sm text-gray-500">{t("Students")}</p>
               </div>
 
               <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p className="text-2xl font-bold text-gray-900">24/7</p>
-                <p className="mt-1 text-sm text-gray-500">Learning</p>
+                <p className="mt-1 text-sm text-gray-500">{t("Learning")}</p>
               </div>
             </div>
           </div>
@@ -119,11 +125,11 @@ export function Signup() {
           <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xl shadow-gray-200/60 sm:p-8 lg:p-10">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900">
-                Create your account
+                {t("Create your account")}
               </h2>
 
               <p className="mt-2 text-sm text-gray-500">
-                Fill in your information to get started.
+                {t("Fill in your information to get started.")}
               </p>
             </div>
 
@@ -135,7 +141,7 @@ export function Signup() {
                     1
                   </div>
 
-                  <SectionTitle title="Account Details" />
+                  <SectionTitle title={t("Account Details")} />
                 </div>
 
                 <div className="space-y-4">
@@ -143,7 +149,7 @@ export function Signup() {
 
                   <div>
                     <Label className="dark:text-black" htmlFor="username">
-                      Your Name <span className="text-red-500">*</span>
+                      {t("Your Name")} <span className="text-red-500">*</span>
                     </Label>
 
                     <TextInput
@@ -160,7 +166,7 @@ export function Signup() {
 
                   <div>
                     <Label className="dark:text-black" htmlFor="email1">
-                      Your Email <span className="text-red-500">*</span>
+                      {t("Your Email")} <span className="text-red-500">*</span>
                     </Label>
 
                     <TextInput
@@ -178,7 +184,7 @@ export function Signup() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label className="dark:text-black" htmlFor="password1">
-                        Password <span className="text-red-500">*</span>
+                        {t("Password")} <span className="text-red-500">*</span>
                       </Label>
 
                       <TextInput
@@ -195,7 +201,7 @@ export function Signup() {
 
                     <div>
                       <Label className="dark:text-black" htmlFor="password2 ">
-                        Confirm Password <span className="text-red-500">*</span>
+                        {t("Confirm Password")} <span className="text-red-500">*</span>
                       </Label>
 
                       <TextInput
@@ -216,11 +222,11 @@ export function Signup() {
               {/* Keep your Personal Information section */}
               {/* Keep your Education Details section */}
               <section className="space-y-4">
-                <SectionTitle title="Personal Information" />
+                <SectionTitle title={t("Personal Information")} />
 
                 <div>
                   <Label className=" dark:text-black">
-                    Gender <span className="text-red-500">*</span>
+                    {t("Gender")} <span className="text-red-500">*</span>
                   </Label>
                   <div className="flex gap-6 mt-2">
                     <label className="flex items-center gap-2 cursor-pointer text-gray-700">
@@ -248,7 +254,7 @@ export function Signup() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="dark:text-black" htmlFor="phone">
-                      Your Phone <span className="text-red-500">*</span>
+                      {t("Your Phone")} <span className="text-red-500">*</span>
                     </Label>
                     <TextInput
                       id="phone"
@@ -262,7 +268,7 @@ export function Signup() {
                   </div>
                   <div>
                     <Label className="dark:text-black" htmlFor="parentPhone">
-                      Parent Phone <span className="text-red-500">*</span>
+                      {t("Parent Phone")} <span className="text-red-500">*</span>
                     </Label>
                     <TextInput
                       id="parentPhone"
@@ -279,11 +285,11 @@ export function Signup() {
 
               {/* Education */}
               <section className="space-y-4">
-                <SectionTitle title="Education Details" />
+                <SectionTitle title={t("Education Details")} />
 
                 <div>
                   <Label className="dark:text-black" htmlFor="school">
-                    Your School <span className="text-red-500">*</span>
+                    {t("Your School")} <span className="text-red-500">*</span>
                   </Label>
                   <TextInput
                     id="school"
@@ -298,7 +304,7 @@ export function Signup() {
 
                 <div>
                   <Label className="dark:text-black" htmlFor="grade">
-                    Grade <span className="text-red-500">*</span>
+                    {t("Grade")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     id="grade"
@@ -306,15 +312,15 @@ export function Signup() {
                     color={errors.grade ? "failure" : undefined}
                     {...register("grade")}
                   >
-                    <option value="">Select grade</option>
+                    <option value="">{t("Select grade")}</option>
                     <option value={GradeEnum.FIRST_SECONDARY}>
-                      First Secondary
+                      {t("First Secondary")}
                     </option>
                     <option value={GradeEnum.SECOND_SECONDARY}>
-                      Second Secondary
+                      {t("Second Secondary")}
                     </option>
                     <option value={GradeEnum.THIRD_SECONDARY}>
-                      Third Secondary
+                      {t("Third Secondary")}
                     </option>
                   </Select>
                   <FieldError message={errors.grade?.message} />
@@ -322,7 +328,7 @@ export function Signup() {
 
                 <div>
                   <Label className="dark:text-black" htmlFor="tracks">
-                    Track <span className="text-red-500">*</span>
+                    {t("Track")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     id="tracks"
@@ -330,28 +336,28 @@ export function Signup() {
                     color={errors.track ? "failure" : undefined}
                     {...register("track")}
                   >
-                    <option value="">Select track</option>
+                    <option value="">{t("Select track")}</option>
 
                     {selectedGrade === GradeEnum.FIRST_SECONDARY && (
-                      <option value={TrackYear.GENERAL}>General</option>
+                      <option value={TrackYear.GENERAL}>{t("General")}</option>
                     )}
 
                     {selectedGrade === GradeEnum.SECOND_SECONDARY && (
                       <>
-                        <option value={TrackYear.LITERARY}>Literary</option>
-                        <option value={TrackYear.SCIENTIFIC}>Scientific</option>
+                        <option value={TrackYear.LITERARY}>{t("Literary")}</option>
+                        <option value={TrackYear.SCIENTIFIC}>{t("Scientific")}</option>
                       </>
                     )}
 
                     {selectedGrade === GradeEnum.THIRD_SECONDARY && (
                       <>
                         <option value={TrackYear.SCIENTIFIC_MATH}>
-                          Scientific Mathematics
+                          {t("Scientific Mathematics")}
                         </option>
                         <option value={TrackYear.SCIENTIFIC_SCIENCE}>
-                          Scientific Science
+                          {t("Scientific Science")}
                         </option>
-                        <option value={TrackYear.LITERARY}>Literary</option>
+                        <option value={TrackYear.LITERARY}>{t("Literary")}</option>
                       </>
                     )}
                   </Select>
@@ -365,16 +371,16 @@ export function Signup() {
                 size="lg"
                 className="w-full rounded-xl py-3 text-base font-semibold"
               >
-                {isSubmitting ? "Creating account..." : "Create Account"}
+                {isSubmitting ? t("Creating account...") : t("Create Account")}
               </Button>
 
               <p className="text-center text-sm text-gray-600">
-                Already have an account?{" "}
+                {t("Already have an account?")}{" "}
                 <Link
                   to="/login"
                   className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
                 >
-                  Log in
+                  {t("Log In")}
                 </Link>
               </p>
             </form>

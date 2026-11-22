@@ -7,13 +7,17 @@ import axios from "axios";
 
 import { otpSchema, type OtpFormValues } from "../auth.validation";
 import { verifyContext } from "../../../context/verify Context/contextCreation";
+import { handleApiError } from "../../../utils/common/errorHandler";
+import { api } from "../../../api/client";
+import { useLanguage } from "../../../context/language/LanguageContext";
+import { Sms } from "iconsax-reactjs";
 
-const API_URL = "http://localhost:3000";
 
 export default function ConfirmOTP() {
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const { userEmail } = useContext(verifyContext);
+  const { t } = useLanguage();
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -105,6 +109,8 @@ export default function ConfirmOTP() {
       setResendSuccess(false);
 
       if (!userEmail) {
+        console.log(userEmail);
+
         setError("root", {
           message:
             "Email address is missing. Please go back and register again.",
@@ -115,10 +121,10 @@ export default function ConfirmOTP() {
 
       const otp = data.otp.join("");
 
-      const response = await axios.post(
-        `${API_URL}/auth/confirm-email`,
+      const response = await api.post(
+        "/auth/confirm-email",
         {
-          userEmail,
+          email: userEmail,
           otp,
         },
         {
@@ -126,17 +132,19 @@ export default function ConfirmOTP() {
         },
       );
 
-      if (!response.data.data?.success) {
+      const apiSuccess = response.data?.success ?? response.data?.data?.success;
+      const apiMessage = response.data?.message ?? response.data?.data?.message;
+
+      if (!apiSuccess) {
         setError("root", {
-          message:
-            response.data.data?.message ||
-            "Invalid or expired verification code.",
+          message: apiMessage || "Invalid or expired verification code.",
         });
 
         return;
       }
-      navigate("/student-dashboard");
+      navigate("/login");
     } catch (error) {
+      handleApiError(error);
       console.error("Confirm OTP error:", error);
 
       if (axios.isAxiosError(error)) {
@@ -171,20 +179,23 @@ export default function ConfirmOTP() {
         return;
       }
 
-      const response = await axios.post(
-        `${API_URL}/auth/resend-email`,
+      const response = await api.post(
+        "/auth/resend-email",
         {
-          userEmail,
+          email: userEmail,
         },
         {
           withCredentials: true,
         },
       );
 
-      if (!response.data?.success) {
+      const apiSuccess = response.data?.success ?? response.data?.data?.success;
+      if (!apiSuccess) {
         setError("root", {
           message:
-            response.data?.message || "Failed to resend verification code.",
+            response.data?.message ||
+            response.data?.data?.message ||
+            "Failed to resend verification code.",
         });
 
         return;
@@ -230,17 +241,17 @@ export default function ConfirmOTP() {
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg sm:p-8">
         <div className="mb-6 flex justify-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-2xl">
-            ✉️
+            <Sms size="25" color="currentColor" />
           </div>
         </div>
 
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">
-            Verify your email
+            {t("Verify your email")}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-gray-500">
-            We sent a 6-digit verification code to
+            {t("We sent a 6-digit verification code to")}
           </p>
 
           {userEmail && (
@@ -300,7 +311,7 @@ export default function ConfirmOTP() {
 
           {resendSuccess && (
             <Alert color="success" className="mb-5">
-              A new verification code has been sent to your email.
+              {t("A new verification code has been sent to your email.")}
             </Alert>
           )}
 
@@ -311,13 +322,13 @@ export default function ConfirmOTP() {
                 Verifying...
               </span>
             ) : (
-              "Verify email"
+              t("Verify email")
             )}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">Didn't receive the code?</p>
+          <p className="text-sm text-gray-500">{t("Didn't receive the code?")}</p>
 
           <button
             type="button"
@@ -330,7 +341,7 @@ export default function ConfirmOTP() {
               disabled:opacity-50
             "
           >
-            {resending ? "Sending..." : "Resend code"}
+            {resending ? t("Sending...") : t("Resend code")}
           </button>
         </div>
       </section>

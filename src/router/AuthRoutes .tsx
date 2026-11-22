@@ -5,7 +5,7 @@ function AuthRoutes({ children }: { children: ReactNode }) {
   if (!localStorage.getItem("token")) {
     return children;
   } else {
-    return <Navigate to={"/student-dashboard"} />;
+    return <Navigate to={"/student/dashboard"} />;
   }
 }
 

@@ -6,6 +6,18 @@ export type UserDataType = {
   name: string;
   gender?: string;
   profilePicture?: string;
+  grade?: {
+    id: string;
+    name: string;
+  };
+  studentProfile?: {
+    school: string;
+  };
+  track?: {
+    id: string;
+    name: string;
+  };
+  school?: string;
 };
 
 type UserContextType = {
